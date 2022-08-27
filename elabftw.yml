@@ -27,11 +27,11 @@ services:
     #pids_limit: 42
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.portainer.rule=Host(`elabftw.nuc10i7fnh.home.arpa`)"
-      - "traefik.http.routers.portainer.entrypoints=https"
-      - "traefik.http.routers.portainer.tls=true"
-      - "traefik.http.routers.portainer.service=portainer"
-      - "traefik.http.services.portainer.loadbalancer.server.port=443"
+      - "traefik.http.routers.elabftw.rule=Host(`elabftw.nuc10i7fnh.home.arpa`)"
+      - "traefik.http.routers.elabftw.entrypoints=https"
+      - "traefik.http.routers.elabftw.tls=true"
+      - "traefik.http.routers.elabftw.service=elabftw"
+      - "traefik.http.services.elabftw.loadbalancer.server.port=443"
 
     # drop some capabilities not needed by the app
     cap_drop:
