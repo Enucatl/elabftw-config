@@ -30,6 +30,7 @@ services:
       - "traefik.http.routers.elabftw.rule=Host(`elabftw.nuc10i7fnh.home.arpa`)"
       - "traefik.http.routers.elabftw.entrypoints=https"
       - "traefik.http.routers.elabftw.tls=true"
+      - "traefik.http.routers.elabftw.middlewares=secured@file"
       - "traefik.http.routers.elabftw.service=elabftw"
       - "traefik.http.services.elabftw.loadbalancer.server.port=443"
 
