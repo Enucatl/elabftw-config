@@ -13,7 +13,7 @@ services:
     # use a specific version to pin the image
     # example: elabftw/elabimg:4.0.5
     # default value: elabftw/elabimg:latest
-    image: elabftw/elabimg:4.3.9
+    image: elabftw/elabimg:latest
     # this ensures the container will be restarted after a reboot of the server
     # default value: always
     restart: always
