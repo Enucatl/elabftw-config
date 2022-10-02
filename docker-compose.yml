@@ -19,7 +19,7 @@ services:
     restart: always
     # comment this out if you use several containers with redis, as you can't have several containers with the same name
     # default value: elabftw
-    container_name: elabftw
+    # container_name: elabftw
     # make sure we wait for mysql to be available before starting
     # comment this out if you're not using a mysql container
     # note: the mysql container needs an healthcheck block for this to work
@@ -264,7 +264,7 @@ services:
     restart: always
      # fix issue with "The server requested authentication method unknown to the client [caching_sha2_password]"
     command: --default-authentication-plugin=mysql_native_password
-    container_name: mysql
+    # container_name: mysql
     # add an healthcheck block so the web container knows when it is ready to accept connections
     # use double $ here so env vars are correctly found
     healthcheck:
@@ -317,56 +317,6 @@ services:
   #  networks:
   #    - elabftw-net
 
-  ###############################################################
-  # EVERYTHING BELOW THIS LINE IS FOR DEVELOPMENT PURPOSES ONLY #
-  ###############################################################
-
-  # PHPMYADMIN
-  # uncomment this part if you want to have phpmyadmin running too
-  #phpmyadmin:
-  #    image: phpmyadmin/phpmyadmin
-  #    container_name: phpmyadmin
-  #    environment:
-  #        - PMA_PORT=3307
-  #    links:
-  #        - mysql:db
-  #    ports:
-  #        - "8080:80"
-  #    networks:
-  #        - elabftw-net
-
-  # LDAP
-  # example for ldap server + admin interface
-  # uncomment if you want to work on LDAP authentication
-  #ldap:
-  #    image: osixia/openldap:1.4.0
-  #    container_name: ldap
-  #    restart: always
-  #    hostname: example.org
-  #    environment:
-  #      - LDAP_TLS_VERIFY_CLIENT=try
-  #      - LDAP_OPENLDAP_UID=1000
-  #      - LDAP_OPENLDAP_GID=1000
-  #    ports:
-  #      - "389:389"
-  #      - "636:636"
-  #    volumes:
-  #      - /var/elabftw/ldap-data/ldap:/var/lib/ldap
-  #      - /var/elabftw/ldap-data/slapd.d:/etc/ldap/slapd.d
-  #    networks:
-  #        - elabftw-net
-  #ldapadmin:
-  #    image: osixia/phpldapadmin:0.9.0
-  #    container_name: ldapadmin
-  #    environment:
-  #      - PHPLDAPADMIN_LDAP_HOSTS=ldap
-  #    restart: always
-  #    ports:
-  #      - "6443:443"
-  #    networks:
-  #        - elabftw-net
-
-# the internal elabftw network
 networks:
   traefik_proxy:
     external: true
