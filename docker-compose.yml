@@ -215,7 +215,7 @@ services:
         # default value: false
         #- DEV_MODE=false
 
-    ports:
+    # ports:
         # Important note about exposing ports: due to the way Docker deals with the host firewall, it is recommended to use '127.0.0.1:1234:443'
         # if you only want to expose the service locally (on port 1234 in this example). See https://github.com/moby/moby/issues/22054
         # Another option is to use the "expose" directive instead of "ports" and let your reverse proxy figure things out.
@@ -226,6 +226,8 @@ services:
         # if you are aiming for running multiple instances of this container you can put a range like so:
         # - "3100-3200:443"
         # use redis for session storage if that is the case, or configure your load balancer with sticky sessions
+    expose:
+      - '443'
     volumes:
         # this is where you will keep the uploaded files persistently
         # for Windows users it might look like this
