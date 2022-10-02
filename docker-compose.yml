@@ -20,19 +20,17 @@ services:
     # comment this out if you use several containers with redis, as you can't have several containers with the same name
     # default value: elabftw
     container_name: elabftw
+    # make sure we wait for mysql to be available before starting
+    # comment this out if you're not using a mysql container
+    # note: the mysql container needs an healthcheck block for this to work
+    depends_on:
+      mysql:
+        condition: service_healthy
 
     # limit number of processes
     # this option is commented out because it is not in v3 of compose files, only v2
     # even though it works as expected in a v3 file with recent docker-compose
     #pids_limit: 42
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.elabftw.rule=Host(`elabftw.nuc10i7fnh.home.arpa`)"
-      - "traefik.http.routers.elabftw.entrypoints=https"
-      - "traefik.http.routers.elabftw.tls=true"
-      - "traefik.http.routers.elabftw.middlewares=secured@file"
-      - "traefik.http.routers.elabftw.service=elabftw"
-      - "traefik.http.services.elabftw.loadbalancer.server.port=443"
 
     # drop some capabilities not needed by the app
     cap_drop:
@@ -43,6 +41,15 @@ services:
         - SETFCAP
         - NET_RAW
         - SYS_PTRACE
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.elabftw.rule=Host(`elabftw.nuc10i7fnh.home.arpa`)"
+      - "traefik.http.routers.elabftw.entrypoints=https"
+      - "traefik.http.routers.elabftw.tls=true"
+      - "traefik.http.routers.elabftw.middlewares=secured@file"
+      - "traefik.http.routers.elabftw.service=elabftw"
+      - "traefik.http.services.elabftw.loadbalancer.server.port=443"
 
     # environment variables passed to the container to configure options at run time (when container is started)
     # commented variables are optional
@@ -70,15 +77,9 @@ services:
         # default value: elabftw
         - DB_USER=elabftw
 
-        # The canonical URL to the website, including port if not standard
-        # example value: https://elab.uni-delta.fr
-        # example value: https://elab.uni-delta.fr:3148
-        - SITE_URL=https://elabftw.nuc10i7fnh.home.arpa
-
-
         # MySQL password; a random password has been generated for you but feel free to change it if needed
         # default value: generated randomly if you get the config from get.elabftw.net
-        - DB_PASSWORD=LscvxDBEKzC3bcbtt8NSm28F6wq0D1x
+        - DB_PASSWORD
 
         # Mysql Cert path: you only need this if you connect to a mysql server with tls
         # Use a volume that points to /mysql-cert in the container
@@ -90,9 +91,9 @@ services:
         #####################
         # the timezone in which the server is
         # better if changed (see list of available values: http://php.net/manual/en/timezones.php
-        - PHP_TIMEZONE=Europe/Paris
+        - PHP_TIMEZONE=Europe/Zurich
         # again
-        - TZ=Europe/Paris
+        - TZ=Europe/Zurich
 
         # optional: set the limit of simultaneous request that will be server
         # see http://php.net/manual/en/install.fpm.configuration.php
@@ -110,17 +111,27 @@ services:
         #########################
         # ELABFTW CONFIGURATION #
         #########################
-        # The secret key is used for encrypting the SMTP password
+        # The secret key is used for encrypting the SMTP and Timestamping passwords
         # A random one has been generated for you, if you wish to change it you can
-        # get your secret key from https://get.elabftw.net/?key
+        # get another secret key from https://get.elabftw.net/?key
         # if you don't want to get it from an external source you can also do that:
-        # docker run --rm -t --entrypoint '/bin/sh' elabftw/elabimg -c "php /elabftw/web/install/generateSecretKey.php"
+        # docker run --rm -t --entrypoint '/bin/sh' elabftw/elabimg -c "php -d memory_limit=10M -d open_basedir='' bin/install genkey"
+        # Note: the value MUST be generated as shown in the methods above.
         # default value: generated randomly if you get the config from get.elabftw.net
         - SECRET_KEY
+
+        # The canonical URL to the website, including port if not standard
+        # example value: https://elab.uni-delta.fr
+        # example value: https://elab.uni-delta.fr:3148
+        - SITE_URL=https://elabftw.nuc10i7fnh.home.arpa
 
         # optional: adjust maximum size of uploaded files
         # default value: 100M
         #- MAX_UPLOAD_SIZE=100M
+
+        # optional: s3 storage credentials
+        #- ELAB_AWS_ACCESS_KEY=
+        #- ELAB_AWS_SECRET_KEY=
 
         #######################
         # NGINX CONFIGURATION #
@@ -138,7 +149,7 @@ services:
         # set to true to use letsencrypt or other certificates
         # note: does nothing if DISABLE_HTTPS is set to true
         # default value: false
-        - ENABLE_LETSENCRYPT=true
+        - ENABLE_LETSENCRYPT=false
 
         # optional: enable ipv6 (make sure you have an AAAA dns record!)
         # default value: false
@@ -189,6 +200,14 @@ services:
         # default value: false
         #- SILENT_INIT=false
 
+        # optional: automatically install the database structure on container start
+        # default value: false
+        #- AUTO_DB_INIT=false
+
+        # optional: automatically update the database structure on container start
+        # default value: false
+        #- AUTO_DB_UPDATE=false
+
         #######
         # DEV #
         #######
@@ -196,14 +215,14 @@ services:
         # default value: false
         #- DEV_MODE=false
 
-    #ports:
+    ports:
         # Important note about exposing ports: due to the way Docker deals with the host firewall, it is recommended to use '127.0.0.1:1234:443'
         # if you only want to expose the service locally (on port 1234 in this example). See https://github.com/moby/moby/issues/22054
         # Another option is to use the "expose" directive instead of "ports" and let your reverse proxy figure things out.
         #
         # if you want elabftw to run on a different port, change the first number
         # host:container
-        #- '49165:443'
+        # - '443:443'
         # if you are aiming for running multiple instances of this container you can put a range like so:
         # - "3100-3200:443"
         # use redis for session storage if that is the case, or configure your load balancer with sticky sessions
@@ -227,7 +246,7 @@ services:
         # if you have enabled letsencrypt, uncomment the line below
         # path to the folder with TLS certificate + private key
         # host:container
-        #- /var/lib/docker/volumes/elabftw/letsencrypt:/ssl
+        #- /etc/letsencrypt:/ssl
         #
         # MYSQL cert path
         #- /path/to/cert/folder:/mysql-cert
@@ -244,6 +263,13 @@ services:
      # fix issue with "The server requested authentication method unknown to the client [caching_sha2_password]"
     command: --default-authentication-plugin=mysql_native_password
     container_name: mysql
+    # add an healthcheck block so the web container knows when it is ready to accept connections
+    # use double $ here so env vars are correctly found
+    healthcheck:
+      test: "/usr/bin/mysql --user=$$MYSQL_USER --password=$$MYSQL_PASSWORD --execute 'SHOW DATABASES;'"
+      interval: 5s
+      timeout: 5s
+      retries: 20
     # drop some capabilities
     cap_drop:
         - AUDIT_WRITE
@@ -255,15 +281,17 @@ services:
         - SYS_NICE
     environment:
         # need to change
-        - MYSQL_ROOT_PASSWORD=w4+ZZNx45/N+CE2uWUdezyd3PrYuMu3wrbddBJpKT6Y=
+        - MYSQL_ROOT_PASSWORD
         # no need to change
         - MYSQL_DATABASE=elabftw
         # no need to change
         - MYSQL_USER=elabftw
         # need to change IMPORTANT: this should be the same password as DB_PASSWORD from the elabftw container
-        - MYSQL_PASSWORD=LscvxDBEKzC3bcbtt8NSm28F6wq0D1x
+        - MYSQL_PASSWORD
         # need to change, this is your timezone, see PHP_TIMEZONE from the elabftw container
-        - TZ=Europe/Paris
+        - TZ=Europe/Zurich
+        # Update this if you want to run the server on a different port than 3306.
+        # - MYSQL_TCP_PORT=3306
 
     volumes:
         # this is where you will keep the database persistently
@@ -271,10 +299,70 @@ services:
         # - D:\Users\Nico\elab-data\mysql:/var/lib/mysql
         # host:container
         - /var/lib/docker/volumes/elabftw/storage/mysql:/var/lib/mysql
+     # The mysql container exposes 3306/33060. Though it does not make an operational difference,
+     # make sure to document your usage here.
     expose:
       - '3306'
     networks:
       - traefik_proxy
+
+  # example of a redis container
+  # uncomment if you want to spawn a redis container to manage sessions
+  #redis:
+  #  image: redis:6.0-alpine
+  #  restart: always
+  #  container_name: redis
+  #  networks:
+  #    - elabftw-net
+
+  ###############################################################
+  # EVERYTHING BELOW THIS LINE IS FOR DEVELOPMENT PURPOSES ONLY #
+  ###############################################################
+
+  # PHPMYADMIN
+  # uncomment this part if you want to have phpmyadmin running too
+  #phpmyadmin:
+  #    image: phpmyadmin/phpmyadmin
+  #    container_name: phpmyadmin
+  #    environment:
+  #        - PMA_PORT=3307
+  #    links:
+  #        - mysql:db
+  #    ports:
+  #        - "8080:80"
+  #    networks:
+  #        - elabftw-net
+
+  # LDAP
+  # example for ldap server + admin interface
+  # uncomment if you want to work on LDAP authentication
+  #ldap:
+  #    image: osixia/openldap:1.4.0
+  #    container_name: ldap
+  #    restart: always
+  #    hostname: example.org
+  #    environment:
+  #      - LDAP_TLS_VERIFY_CLIENT=try
+  #      - LDAP_OPENLDAP_UID=1000
+  #      - LDAP_OPENLDAP_GID=1000
+  #    ports:
+  #      - "389:389"
+  #      - "636:636"
+  #    volumes:
+  #      - /var/elabftw/ldap-data/ldap:/var/lib/ldap
+  #      - /var/elabftw/ldap-data/slapd.d:/etc/ldap/slapd.d
+  #    networks:
+  #        - elabftw-net
+  #ldapadmin:
+  #    image: osixia/phpldapadmin:0.9.0
+  #    container_name: ldapadmin
+  #    environment:
+  #      - PHPLDAPADMIN_LDAP_HOSTS=ldap
+  #    restart: always
+  #    ports:
+  #      - "6443:443"
+  #    networks:
+  #        - elabftw-net
 
 # the internal elabftw network
 networks:
