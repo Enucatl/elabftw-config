@@ -43,6 +43,7 @@ services:
         - SYS_PTRACE
 
     labels:
+      - "checkmk_monitor=true"
       - "traefik.enable=true"
       - "traefik.http.routers.elabftw.rule=Host(`elabftw.nuc10i7fnh.home.arpa`)"
       - "traefik.http.routers.elabftw.entrypoints=https"
